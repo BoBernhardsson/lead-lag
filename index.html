@@ -69,6 +69,9 @@
       font-size: 12px;
     }
 
+  
+    select { font-family: inherit; }
+
   </style>
 </head>
 <body>
@@ -90,7 +93,7 @@
 
       <div class="row">
         <div class="formula">
-          C(s) = K * (s + a)/s * N * (s + b)/(s + bN)
+          C(s) = K(s + a)/s * N(s + b)/(s + bN)
         </div>
       </div>
 
@@ -137,6 +140,46 @@
           (range 1 … 20)
         </div>
       </div>
+
+      <div class="row">
+        <label>Design challenge</label>
+
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <select id="challengeSelect"
+                  style="flex:1; min-width:190px; padding:8px; border:1px solid #ccc; border-radius:8px;">
+            <option value="custom">Custom (no challenge)</option>
+            <option value="c1">Challenge 1: Robust &amp; calm</option>
+            <option value="c2">Challenge 2: Fast but safe</option>
+            <option value="c3">Challenge 3: Disturbance fighter</option>
+          </select>
+          <button id="loadChallengeBtn">Load</button>
+        </div>
+
+        <div class="small" id="challengeHint" style="margin-top:8px; line-height:1.35;">
+          Select a challenge to load a plant and targets (Am/Phim).
+        </div>
+
+        <!-- Goal and Targets FIRST -->
+        <div class="small" id="challengeGoal"
+            style="margin-top:10px; line-height:1.4;">
+          <b>Goal:</b><br>
+          <span id="goalText">—</span><br><br>
+
+          <b>Targets:</b><br>
+          <span class="value" id="targetText">—</span>
+        </div>
+
+        <!-- Status BELOW, each on new line -->
+        <div class="small"
+            style="margin-top:12px; line-height:1.6;">
+          <b>Status:</b><br>
+          <span class="value" id="statusAm">Am: —</span><br>
+          <span class="value" id="statusPm">Phim: —</span><br>
+          <span class="value" id="statusMask">Mask: —</span><br>
+          <span class="value" id="statusScore">Score: —</span>
+        </div>
+      </div>
+
 
       <div class="row" style="display:flex; gap:10px; align-items:center;">
         <button id="reseedBtn">Reseed noise</button>
@@ -201,6 +244,7 @@
 
   </div>
 
+  <!-- <script src="./app_with_challenge.js"></script> -- REPLACE if you want CHALLENGE VERSION -->
   <script src="./app.js"></script>
 </body>
 </html>
