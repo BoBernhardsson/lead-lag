@@ -370,6 +370,59 @@ function companionEigenvaluesRealPoly(den) {
 
 // Random normal (Box–Muller)
 let rngSeed = 1234567;
+
+// Axis/time scaling: k in {-2,-1,0,1,2}. Frequency range shifts by ×10^k,
+// simulation horizon and timestep shift by ÷10^k.
+let axisScaleExp = 0;
+const AXIS_SCALE_EXP_MIN = -2;
+const AXIS_SCALE_EXP_MAX = 2;
+
+function getAxisScale() {
+  return Math.pow(10, axisScaleExp);
+}
+
+function setAxisScaleExp(k) {
+  axisScaleExp = Math.max(AXIS_SCALE_EXP_MIN, Math.min(AXIS_SCALE_EXP_MAX, k));
+  cachedSignals = buildSignals(); // rebuild time signals at new scale
+  updateScaleUI();
+  renderAll();
+}
+
+function fmtPow10Exp(exp) {
+  if (exp === 0) return "1";
+  return `1e${exp}`;
+}
+
+function fmtNice(x) {
+  if (!Number.isFinite(x)) return "—";
+  // readable, without long tails
+  if (Math.abs(x) >= 100) return x.toFixed(0);
+  if (Math.abs(x) >= 10) return x.toFixed(1);
+  if (Math.abs(x) >= 1) return x.toFixed(2);
+  return x.toFixed(3);
+}
+
+function updateScaleUI() {
+  const scaleEl = document.getElementById("scaleVal");
+  const wRangeEl = document.getElementById("wRangeText");
+  const tRangeEl = document.getElementById("tRangeText");
+  const dtEl = document.getElementById("dtText");
+  if (!scaleEl || !wRangeEl || !tRangeEl || !dtEl) return;
+
+  const wMinExp = -3 + axisScaleExp;
+  const wMaxExp =  2 + axisScaleExp;
+  const scale = getAxisScale();
+
+  scaleEl.textContent = `×${fmtPow10Exp(axisScaleExp)}`;
+
+  wRangeEl.textContent = `${fmtPow10Exp(wMinExp)} … ${fmtPow10Exp(wMaxExp)}`;
+
+  const Tend = 60 / scale;
+  const dt = 0.025 / scale;
+  tRangeEl.textContent = `0 … ${fmtNice(Tend)}`;
+  dtEl.textContent = fmtNice(dt);
+}
+
 function randUniform() {
   // xorshift32
   let x = rngSeed | 0;
@@ -400,6 +453,10 @@ const kInput = el("kInput");
 const aInput = el("aInput");
 const bInput = el("bInput");
 const nInput = el("nInput");
+
+const scaleDownBtn = el("scaleDownBtn");
+const scaleUpBtn = el("scaleUpBtn");
+const scaleResetBtn = el("scaleResetBtn");
 
 let override = { K: false, a: false, b: false, N: false };
 
@@ -469,15 +526,25 @@ function makeControllerTF(K, a, b, N) {
 }
 
 function buildSignals() {
+  const scale = getAxisScale();
+  const dt = 0.025 / scale;
+  const Tend = 60 / scale;
+
   const t = [];
-  for (let i = 0; i <= 600; i++) t.push(i * 0.1); // 0..60
+  const nSteps = Math.round(Tend / dt);
+  for (let i = 0; i <= nSteps; i++) t.push(i * dt);
+
+  const tNoise = 40 / scale;
+  const tLoad = 20 / scale;
+
   const r = t.map(() => 1);
-  const n = t.map(tt => (tt > 40 ? 0.2 * randn() : 0));
-  const l = t.map(tt => (tt > 20 ? -0.5 : 0));
+  const n = t.map(tt => (tt > tNoise ? 0.2 * randn() : 0));
+  const l = t.map(tt => (tt > tLoad ? -0.5 : 0));
   return { t, r, n, l };
 }
 
 let cachedSignals = buildSignals();
+updateScaleUI();
 
 function renderAll() {
   updateParamLabels();
@@ -495,7 +562,7 @@ function renderAll() {
   const Ctf = makeControllerTF(K, a, b, N);
 
   // Frequency response
-  const w = logspace(-3, 2, 200);
+  const w = logspace(-3 + axisScaleExp, 2 + axisScaleExp, 200);
 
   // Open loop L = G*C
   const numL = polyMul(numG, Ctf.num);
@@ -614,9 +681,17 @@ function renderAll() {
   const u = ua.map((v, i) => v + ub[i]);
 
   Plotly.react("yPlot", [
-    { x: t, y: y1, mode: "lines", name: "y before" },
-    { x: t, y: y,  mode: "lines", name: "y after" },
-    { x: [t[0], t[t.length - 1]], y: [1, 1], mode: "lines", name: "reference", line: { dash: "dash" } },
+    // draw after first (orange)
+    { x: t, y: y,  mode: "lines", name: "y after",  line: { color: "#ff7f0e" } },
+
+    // draw before last (blue) so it sits on top
+    { x: t, y: y1, mode: "lines", name: "y before", line: { color: "#1f77b4" } },
+
+    // reference line (keep dashed, choose a neutral color)
+    { x: [t[0], t[t.length - 1]], y: [1, 1],
+      mode: "lines",
+      name: "reference",
+      line: { dash: "dash", color: "#444" } },
   ], {
     margin: { l: 55, r: 10, t: 20, b: 45 },
     yaxis: { title: "output y", range: [0, 1.5] },
@@ -625,8 +700,8 @@ function renderAll() {
   }, { responsive: true });
 
   Plotly.react("uPlot", [
-    { x: t, y: u1, mode: "lines", name: "u before" },
-    { x: t, y: u,  mode: "lines", name: "u after" },
+    { x: t, y: u,  mode: "lines", name: "u after",  line: { color: "#ff7f0e" } },
+    { x: t, y: u1, mode: "lines", name: "u before", line: { color: "#1f77b4" } },
   ], {
     margin: { l: 55, r: 10, t: 20, b: 45 },
     yaxis: { title: "control u" },
@@ -730,6 +805,11 @@ nSlider.addEventListener("input", () => { override.N = false; renderAll(); });
 
 [gNumEl, gDenEl].forEach(inp => inp.addEventListener("change", renderAll));
 
+
+if (scaleDownBtn) scaleDownBtn.addEventListener("click", () => setAxisScaleExp(axisScaleExp - 1));
+if (scaleUpBtn) scaleUpBtn.addEventListener("click", () => setAxisScaleExp(axisScaleExp + 1));
+if (scaleResetBtn) scaleResetBtn.addEventListener("click", () => setAxisScaleExp(0));
+
 el("reseedBtn").addEventListener("click", () => {
   rngSeed = (Date.now() & 0xffffffff) ^ 0x9e3779b9;
   cachedSignals = buildSignals();
@@ -737,6 +817,8 @@ el("reseedBtn").addEventListener("click", () => {
 });
 
 el("resetBtn").addEventListener("click", () => {
+  axisScaleExp = 0;
+  updateScaleUI();
   gNumEl.value = "1";
   gDenEl.value = "1 3 2 0";
   kSlider.value = "0";        // K=1
@@ -779,5 +861,6 @@ hookNumericInput(bInput, bSlider, "b", -1, 1);
 hookNumericInput(nInput, nSlider, "N", 0, 1.30103);
 
 // Initial render
+updateScaleUI();
 updateParamLabels();
 renderAll();

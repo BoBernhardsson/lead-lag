@@ -62,6 +62,13 @@
       grid-template-rows: 1fr 1fr; /* y on top of u */
       gap: 12px;
     }
+  
+    /* Scale control buttons (slightly smaller) */
+    #scaleDownBtn, #scaleUpBtn, #scaleResetBtn {
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
   </style>
 </head>
 <body>
@@ -136,8 +143,30 @@
         <button id="resetBtn">Reset defaults</button>
       </div>
 
-      <div class="small">
-        Experiment signals: step reference, load disturbance at t=20s, measurement noise at t=40s.
+      <div class="row" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button id="scaleDownBtn" title="Shift frequency range down ×0.1 and simulation time up ×10">×0.1</button>
+        <button id="scaleUpBtn" title="Shift frequency range up ×10 and simulation time down ×0.1">×10</button>
+        <button id="scaleResetBtn" title="Reset Frequency scale to ×1">Reset Frequency scale</button>
+        <div class="small" style="margin-left:auto;">
+          Scale: <span class="value" id="scaleVal">×1</span>
+        </div>
+      </div>
+
+      <div class="small" id="rangeCue" style="margin-top:-6px; line-height:1.4;">
+        <div>
+          ω-range: <span class="value" id="wRangeText">1e-3 … 1e2</span> rad/s
+        </div>
+        <div>
+          Simulation: <span class="value" id="tRangeText">0 … 60</span> s,
+          Δt = <span class="value" id="dtText">0.1</span> s
+        </div>
+      </div>
+
+      <div class="small" style="margin-top:6px; line-height:1.4;">
+        Experiment signals:<br>
+        • Step reference<br>
+        • Load disturbance <br>
+        • Measurement noise 
       </div>
     </div>
 
