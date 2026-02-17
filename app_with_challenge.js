@@ -4,6 +4,7 @@
    C = K*(s+a)/s * N*(s+b)/(s+b*N)
    y = lsim(feedback(G*C,1), r-n) + lsim(feedback(G,C), l)
    u = lsim(feedback(C,G), r-n) + lsim(feedback(G*C,1), l)
+   run locally: python3 -m http.server 8000 -> http://localhost:8000
 */
 
 
